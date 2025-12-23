@@ -1,6 +1,7 @@
 import User from "../models/user.js";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../lib/utils.js";
+import { sendwelcomeemail } from "../emails/emailhandler.js";
 
 /* =========================
    SIGNUP CONTROLLER
@@ -20,13 +21,13 @@ export const signup = async (req, res) => {
         .json({ message: "Password must be at least 6 characters long" });
     }
 
-    // 2️⃣ Validate email format
+    // 2️⃣ Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: "Invalid email address" });
     }
 
-    // 3️⃣ Check if user already exists
+    // 3️⃣ Check existing user
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -36,25 +37,33 @@ export const signup = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 5️⃣ Create new user
-    const newUser = new User({
+    // 5️⃣ Save user
+    const newUser = await User.create({
       fullname,
       email,
       password: hashedPassword,
     });
 
-    await newUser.save();
-
-    // 6️⃣ Generate JWT token (cookie)
+    // 6️⃣ Generate JWT cookie
     generateToken(newUser._id, res);
 
-    // 7️⃣ Send response
-    return res.status(201).json({
+    // 7️⃣ Send response FIRST (fast UX)
+    res.status(201).json({
       _id: newUser._id,
       fullname: newUser.fullname,
       email: newUser.email,
       profilepic: newUser.profilepic,
     });
+
+    // 8️⃣ Send welcome email (non-blocking)
+    sendwelcomeemail(
+      newUser.email,
+      newUser.fullname,
+      process.env.CLIENT_URL
+    ).catch(err => {
+      console.error("Email error:", err.message);
+    });
+
   } catch (error) {
     console.error("Signup error:", error);
     return res.status(500).json({ message: "Server error" });
