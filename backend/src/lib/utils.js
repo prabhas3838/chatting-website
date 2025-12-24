@@ -6,12 +6,11 @@ export const generateToken = (userId, res) => {
     });
 
     // Set token in HTTP-only cookie
-    res.cookie("token", token, {
+    res.cookie("jwt", token, {
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         httpOnly: true,
         secure: process.env.NODE_ENV === "development"? false:true, // Use secure cookies in production
         sameSite: "strict",
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
     return token;

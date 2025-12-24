@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import path from "path";
+import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/auth.js";
 import messagesRoutes from "../src/routes/messageroutes.js"
@@ -13,6 +14,7 @@ const app = express();
 const __dirname=path.resolve();
 
 app.use(express.json());
+app.use(cookieParser());
 
 //app.get("/api/auth/signup", (req, res) => {res.send("signup ROUTE");});
 
